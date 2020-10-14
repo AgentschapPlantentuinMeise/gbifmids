@@ -1,0 +1,230 @@
+---
+title: "GBIF dataset MIDS calculator"
+author: "Mathias Dillen"
+date: "10/14/2020"
+output: html_document
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = T)
+```
+
+```{r packages,include=F}
+library(tidyverse)
+library(jsonlite)
+library(magrittr)
+```
+
+##Set working directory
+
+```{r setwd}
+setwd("C:/Users/mdill/data")
+```
+
+##Read occurrence file
+
+Download a GBIF archive to your working directory, unzip and import the occurrence file.
+
+```{r import}
+occ = read_tsv("occurrence.txt",
+               col_types = cols(.default = "c"))
+```
+
+##Parse informationWithheld to columns
+
+```{r infwith, include=F}
+#infwith is a function to set value to known:withheld if its DwC name is present 
+#in the dwc:informationWithheld field
+
+#behold the hideous syntax
+infwith <- function(df,
+                    colname) {
+  df %<>%
+    mutate("{colname}" := 
+             ifelse(grepl(colname,
+                          informationWithheld),
+                    "known:withheld",
+                    .data[[colname]])
+    )
+  return(df)
+}
+```
+
+Set the value for the property of a record to `known:withheld` if its Darwin Core property name is present in the `dwc:informationWithheld` field.
+
+This is currently done for the following Darwin Core properties, using a custom function:
+
+```{r infowithheld}
+#better set as a loop and list property names in a vector
+occ = infwith(occ,"locality")
+occ = infwith(occ,"decimalLatitude")
+occ = infwith(occ,"decimalLongitude")
+occ = infwith(occ,"county")
+occ = infwith(occ,"recordedBy")
+occ = infwith(occ,"recordedByID")
+occ = infwith(occ,"eventDate")
+occ = infwith(occ,"year")
+occ = infwith(occ,"verbatimEventDate")
+```
+
+##MIDS level -1
+
+Some specimens may not even achieve MIDS level 0. This happens if they have no physical identifier or if they have no value to indicate where they are curated.
+
+```{r minus}
+occminus = occ %>%
+  filter((is.na(catalogNumber)&
+            is.na(otherCatalogNumbers))|
+           (is.na(institutionCode)&
+              is.na(collectionCode)&
+              is.na(ownerInstitutionCode)&
+              is.na(institutionID)&
+              is.na(rightsHolder)))
+
+occminus$mids = -1
+
+occ %<>%
+  filter(!occurrenceID%in%occminus$occurrenceID)
+```
+
+##MIDS level 0
+
+Specimens are stuck at level 0 mainly if they have no (proper) scientific name. This can be checked by using the Taxon Name Resolution Service (http://tnrs.iplantc.org/). GBIF performs a validation step during ingestion, so we can take the output of this by removing records flagged with `TAXON_MATCH_NONE`.
+
+```{r zero}
+occ0 = occ %>%
+  filter(is.na(scientificName)|
+           grepl("TAXON_MATCH_NONE",
+                 issue))
+
+occ0$mids = 0
+
+occ %<>%
+  filter(!occurrenceID%in%occ0$occurrenceID)
+```
+
+##MIDS level 1
+
+Specimens at level 1 have a proper scientific name, but are missing one of the following:
+
+* No value for `dwc:county`, `dwc:locality` and decimal coordinates.
+* No value or any alphanumeric character for `dwc:recordedBy`. No value for `gbif:recordedByID`.
+* No value for `dwc:eventDate`, `dwc:year` and `dwc:verbatimEventDate`.
+
+```{r one}
+occ$localitylow = tolower(
+  gsub("[[:punct:]]|\\s",
+       "",
+       occ$locality)
+  )
+
+occ$countylow = tolower(
+  gsub("[[:punct:]]|\\s",
+       "",
+       occ$county)
+)
+
+occ$recordedBylow = tolower(
+  gsub("[[:punct:]]|\\s",
+       "",
+       occ$recordedBy)
+)
+
+occ1 = occ %>%
+  filter(
+    (is.na(county)|
+       countylow==""),
+    (is.na(locality)|
+       localitylow==""),
+    is.na(decimalLatitude),
+    is.na(decimalLongitude),
+    (is.na(recordedBy)|
+       recordedBylow==""),
+    is.na(recordedByID),
+    is.na(eventDate),
+    is.na(year),
+    is.na(verbatimEventDate)) %>%
+  select(-localitylow,
+         -countylow,
+         -recordedBylow)
+
+occ1$mids = 1
+
+occ %<>%
+  filter(!occurrenceID%in%occ1$occurrenceID) %>%
+  select(-localitylow,
+         -countylow,
+         -recordedBylow)
+```
+
+##MIDS level 2
+
+Specimens are at level 2 if they have no image or if GBIF flagged them with a certain issue.
+
+```{r two}
+occ2 = occ %>%
+  filter(is.na(mediaType),
+         !is.na(issue))
+
+occ2$mids = 2
+
+occ %<>%
+  filter(!occurrenceID%in%occ2$occurrenceID)
+```
+
+##MIDS level 3
+
+Everything remaining. Summary stats:
+
+```{r three}
+occ$mids = 3
+
+summ= tibble(n = c(
+  dim(occminus)[1],
+  dim(occ0)[1],
+  dim(occ1)[1],
+  dim(occ2)[1],
+  dim(occ)[1]))
+
+summ %<>%
+  mutate(perc = round(100*n/sum(n),
+                      digits=2))
+
+print(
+  paste0("Number of records at -1: ",
+         dim(occminus)[1],
+         " or ",
+         summ$perc[1],
+         "%")
+)
+print(
+  paste0("Number of records at 0: ",
+         dim(occ0)[1],
+         " or ",
+         summ$perc[2],
+         "%")
+)
+print(
+  paste0("Number of records at 1: ",
+         dim(occ1)[1],
+         " or ",
+         summ$perc[3],
+         "%")
+)
+print(
+  paste0("Number of records at 2: ",
+         dim(occ2)[1],
+         " or ",
+         summ$perc[4],
+         "%")
+)
+print(
+  paste0("Number of records at 3: ",
+         dim(occ)[1],
+         " or ",
+         summ$perc[5],
+         "%")
+)
+
+```
+
