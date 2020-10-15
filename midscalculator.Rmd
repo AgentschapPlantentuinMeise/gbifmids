@@ -27,7 +27,8 @@ Download a GBIF archive to your working directory, unzip and import the occurren
 
 ```{r import}
 occ = read_tsv("occurrence.txt",
-               col_types = cols(.default = "c"))
+               col_types = cols(.default = "c"),
+               quote="")
 ```
 
 ## Parse informationWithheld to columns
