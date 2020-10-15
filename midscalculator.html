@@ -370,26 +370,37 @@ summary {
 </div>
 
 
-<p>##Set working directory</p>
+<div id="set-working-directory" class="section level2">
+<h2>Set working directory</h2>
 <pre class="r"><code>setwd(&quot;C:/Users/mdill/data&quot;)</code></pre>
-<p>##Read occurrence file</p>
+</div>
+<div id="read-occurrence-file" class="section level2">
+<h2>Read occurrence file</h2>
 <p>Download a GBIF archive to your working directory, unzip and import the occurrence file.</p>
 <pre class="r"><code>occ = read_tsv(&quot;occurrence.txt&quot;,
                col_types = cols(.default = &quot;c&quot;))</code></pre>
-<p>##Parse informationWithheld to columns</p>
+</div>
+<div id="parse-informationwithheld-to-columns" class="section level2">
+<h2>Parse informationWithheld to columns</h2>
 <p>Set the value for the property of a record to <code>known:withheld</code> if its Darwin Core property name is present in the <code>dwc:informationWithheld</code> field.</p>
 <p>This is currently done for the following Darwin Core properties, using a custom function:</p>
-<pre class="r"><code>#better set as a loop and list property names in a vector
-occ = infwith(occ,&quot;locality&quot;)
-occ = infwith(occ,&quot;decimalLatitude&quot;)
-occ = infwith(occ,&quot;decimalLongitude&quot;)
-occ = infwith(occ,&quot;county&quot;)
-occ = infwith(occ,&quot;recordedBy&quot;)
-occ = infwith(occ,&quot;recordedByID&quot;)
-occ = infwith(occ,&quot;eventDate&quot;)
-occ = infwith(occ,&quot;year&quot;)
-occ = infwith(occ,&quot;verbatimEventDate&quot;)</code></pre>
-<p>##MIDS level -1</p>
+<pre class="r"><code>withheldproperties = c(&quot;locality&quot;,
+                       &quot;decimalLatitude&quot;,
+                       &quot;decimalLongitude&quot;,
+                       &quot;county&quot;,
+                       &quot;recordedBy&quot;,
+                       &quot;recordedByID&quot;,
+                       &quot;eventDate&quot;,
+                       &quot;year&quot;,
+                       &quot;verbatimEventDate&quot;)
+
+for (i in 1:length(withheldproperties)) {
+  occ = infwith(occ,
+                withheldproperties[i])
+}</code></pre>
+</div>
+<div id="mids-level--1" class="section level2">
+<h2>MIDS level -1</h2>
 <p>Some specimens may not even achieve MIDS level 0. This happens if they have no physical identifier or if they have no value to indicate where they are curated.</p>
 <pre class="r"><code>occminus = occ %&gt;%
   filter((is.na(catalogNumber)&amp;
@@ -404,7 +415,9 @@ occminus$mids = -1
 
 occ %&lt;&gt;%
   filter(!occurrenceID%in%occminus$occurrenceID)</code></pre>
-<p>##MIDS level 0</p>
+</div>
+<div id="mids-level-0" class="section level2">
+<h2>MIDS level 0</h2>
 <p>Specimens are stuck at level 0 mainly if they have no (proper) scientific name. This can be checked by using the Taxon Name Resolution Service (<a href="http://tnrs.iplantc.org/" class="uri">http://tnrs.iplantc.org/</a>). GBIF performs a validation step during ingestion, so we can take the output of this by removing records flagged with <code>TAXON_MATCH_NONE</code>.</p>
 <pre class="r"><code>occ0 = occ %&gt;%
   filter(is.na(scientificName)|
@@ -415,7 +428,9 @@ occ0$mids = 0
 
 occ %&lt;&gt;%
   filter(!occurrenceID%in%occ0$occurrenceID)</code></pre>
-<p>##MIDS level 1</p>
+</div>
+<div id="mids-level-1" class="section level2">
+<h2>MIDS level 1</h2>
 <p>Specimens at level 1 have a proper scientific name, but are missing one of the following:</p>
 <ul>
 <li>No value for <code>dwc:county</code>, <code>dwc:locality</code> and decimal coordinates.</li>
@@ -465,7 +480,9 @@ occ %&lt;&gt;%
   select(-localitylow,
          -countylow,
          -recordedBylow)</code></pre>
-<p>##MIDS level 2</p>
+</div>
+<div id="mids-level-2" class="section level2">
+<h2>MIDS level 2</h2>
 <p>Specimens are at level 2 if they have no image or if GBIF flagged them with a certain issue.</p>
 <pre class="r"><code>occ2 = occ %&gt;%
   filter(is.na(mediaType),
@@ -475,7 +492,9 @@ occ2$mids = 2
 
 occ %&lt;&gt;%
   filter(!occurrenceID%in%occ2$occurrenceID)</code></pre>
-<p>##MIDS level 3</p>
+</div>
+<div id="mids-level-3" class="section level2">
+<h2>MIDS level 3</h2>
 <p>Everything remaining. Summary stats:</p>
 <pre class="r"><code>occ$mids = 3
 
@@ -530,6 +549,7 @@ print(
          &quot;%&quot;)
 )</code></pre>
 <pre><code>## [1] &quot;Number of records at 3: 1473813 or 82.98%&quot;</code></pre>
+</div>
 
 
 

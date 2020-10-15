@@ -15,13 +15,13 @@ library(jsonlite)
 library(magrittr)
 ```
 
-##Set working directory
+## Set working directory
 
 ```{r setwd}
-setwd("C:/Users/mdill/data")
+setwd("D:/apm/mids/gbifmids")
 ```
 
-##Read occurrence file
+## Read occurrence file
 
 Download a GBIF archive to your working directory, unzip and import the occurrence file.
 
@@ -30,7 +30,7 @@ occ = read_tsv("occurrence.txt",
                col_types = cols(.default = "c"))
 ```
 
-##Parse informationWithheld to columns
+## Parse informationWithheld to columns
 
 ```{r infwith, include=F}
 #infwith is a function to set value to known:withheld if its DwC name is present 
@@ -55,19 +55,23 @@ Set the value for the property of a record to `known:withheld` if its Darwin Cor
 This is currently done for the following Darwin Core properties, using a custom function:
 
 ```{r infowithheld}
-#better set as a loop and list property names in a vector
-occ = infwith(occ,"locality")
-occ = infwith(occ,"decimalLatitude")
-occ = infwith(occ,"decimalLongitude")
-occ = infwith(occ,"county")
-occ = infwith(occ,"recordedBy")
-occ = infwith(occ,"recordedByID")
-occ = infwith(occ,"eventDate")
-occ = infwith(occ,"year")
-occ = infwith(occ,"verbatimEventDate")
+withheldproperties = c("locality",
+                       "decimalLatitude",
+                       "decimalLongitude",
+                       "county",
+                       "recordedBy",
+                       "recordedByID",
+                       "eventDate",
+                       "year",
+                       "verbatimEventDate")
+
+for (i in 1:length(withheldproperties)) {
+  occ = infwith(occ,
+                withheldproperties[i])
+}
 ```
 
-##MIDS level -1
+## MIDS level -1
 
 Some specimens may not even achieve MIDS level 0. This happens if they have no physical identifier or if they have no value to indicate where they are curated.
 
@@ -87,7 +91,7 @@ occ %<>%
   filter(!occurrenceID%in%occminus$occurrenceID)
 ```
 
-##MIDS level 0
+## MIDS level 0
 
 Specimens are stuck at level 0 mainly if they have no (proper) scientific name. This can be checked by using the Taxon Name Resolution Service (http://tnrs.iplantc.org/). GBIF performs a validation step during ingestion, so we can take the output of this by removing records flagged with `TAXON_MATCH_NONE`.
 
@@ -103,7 +107,7 @@ occ %<>%
   filter(!occurrenceID%in%occ0$occurrenceID)
 ```
 
-##MIDS level 1
+## MIDS level 1
 
 Specimens at level 1 have a proper scientific name, but are missing one of the following:
 
@@ -157,7 +161,7 @@ occ %<>%
          -recordedBylow)
 ```
 
-##MIDS level 2
+## MIDS level 2
 
 Specimens are at level 2 if they have no image or if GBIF flagged them with a certain issue.
 
@@ -172,7 +176,7 @@ occ %<>%
   filter(!occurrenceID%in%occ2$occurrenceID)
 ```
 
-##MIDS level 3
+## MIDS level 3
 
 Everything remaining. Summary stats:
 
