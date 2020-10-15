@@ -372,7 +372,7 @@ summary {
 
 <div id="set-working-directory" class="section level2">
 <h2>Set working directory</h2>
-<pre class="r"><code>setwd(&quot;C:/Users/mdill/data&quot;)</code></pre>
+<pre class="r"><code>setwd(&quot;D:/apm/mids/gbifmids&quot;)</code></pre>
 </div>
 <div id="read-occurrence-file" class="section level2">
 <h2>Read occurrence file</h2>
@@ -433,53 +433,28 @@ occ %&lt;&gt;%
 <h2>MIDS level 1</h2>
 <p>Specimens at level 1 have a proper scientific name, but are missing one of the following:</p>
 <ul>
-<li>No value for <code>dwc:county</code>, <code>dwc:locality</code> and decimal coordinates.</li>
-<li>No value or any alphanumeric character for <code>dwc:recordedBy</code>. No value for <code>gbif:recordedByID</code>.</li>
+<li>No value for <code>dwc:county</code>, <code>dwc:locality</code>, <code>dwc:verbatimLocality</code> and decimal coordinates.</li>
+<li>No value for <code>dwc:recordedBy</code>. No value for <code>gbif:recordedByID</code>.</li>
 <li>No value for <code>dwc:eventDate</code>, <code>dwc:year</code> and <code>dwc:verbatimEventDate</code>.</li>
 </ul>
-<pre class="r"><code>occ$localitylow = tolower(
-  gsub(&quot;[[:punct:]]|\\s&quot;,
-       &quot;&quot;,
-       occ$locality)
-  )
-
-occ$countylow = tolower(
-  gsub(&quot;[[:punct:]]|\\s&quot;,
-       &quot;&quot;,
-       occ$county)
-)
-
-occ$recordedBylow = tolower(
-  gsub(&quot;[[:punct:]]|\\s&quot;,
-       &quot;&quot;,
-       occ$recordedBy)
-)
-
-occ1 = occ %&gt;%
+<pre class="r"><code>occ1 = occ %&gt;%
   filter(
-    (is.na(county)|
-       countylow==&quot;&quot;),
-    (is.na(locality)|
-       localitylow==&quot;&quot;),
-    is.na(decimalLatitude),
-    is.na(decimalLongitude),
-    (is.na(recordedBy)|
-       recordedBylow==&quot;&quot;),
-    is.na(recordedByID),
-    is.na(eventDate),
-    is.na(year),
-    is.na(verbatimEventDate)) %&gt;%
-  select(-localitylow,
-         -countylow,
-         -recordedBylow)
+    (is.na(county)&amp;
+       is.na(locality)&amp;
+       is.na(verbatimLocality)&amp;
+       is.na(decimalLatitude)&amp;
+       is.na(decimalLongitude))|
+    (is.na(recordedBy)&amp;
+       is.na(recordedByID))|
+    (is.na(eventDate)&amp;
+       is.na(year)&amp;
+       is.na(verbatimEventDate))
+  )
 
 occ1$mids = 1
 
 occ %&lt;&gt;%
-  filter(!occurrenceID%in%occ1$occurrenceID) %&gt;%
-  select(-localitylow,
-         -countylow,
-         -recordedBylow)</code></pre>
+  filter(!occurrenceID%in%occ1$occurrenceID)</code></pre>
 </div>
 <div id="mids-level-2" class="section level2">
 <h2>MIDS level 2</h2>
@@ -532,7 +507,7 @@ print(
          summ$perc[3],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 1: 244523 or 13.77%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 1: 532089 or 29.96%&quot;</code></pre>
 <pre class="r"><code>print(
   paste0(&quot;Number of records at 2: &quot;,
          dim(occ2)[1],
@@ -540,7 +515,7 @@ print(
          summ$perc[4],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 2: 46770 or 2.63%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 2: 34043 or 1.92%&quot;</code></pre>
 <pre class="r"><code>print(
   paste0(&quot;Number of records at 3: &quot;,
          dim(occ)[1],
@@ -548,7 +523,7 @@ print(
          summ$perc[5],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 3: 1473813 or 82.98%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 3: 1198974 or 67.51%&quot;</code></pre>
 </div>
 
 

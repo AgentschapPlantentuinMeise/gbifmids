@@ -56,6 +56,7 @@ This is currently done for the following Darwin Core properties, using a custom 
 
 ```{r infowithheld}
 withheldproperties = c("locality",
+                       "verbatimLocality",
                        "decimalLatitude",
                        "decimalLongitude",
                        "county",
@@ -111,54 +112,29 @@ occ %<>%
 
 Specimens at level 1 have a proper scientific name, but are missing one of the following:
 
-* No value for `dwc:county`, `dwc:locality` and decimal coordinates.
-* No value or any alphanumeric character for `dwc:recordedBy`. No value for `gbif:recordedByID`.
+* No value for `dwc:county`, `dwc:locality`, `dwc:verbatimLocality` and decimal coordinates.
+* No value for `dwc:recordedBy`. No value for `gbif:recordedByID`.
 * No value for `dwc:eventDate`, `dwc:year` and `dwc:verbatimEventDate`.
 
 ```{r one}
-occ$localitylow = tolower(
-  gsub("[[:punct:]]|\\s",
-       "",
-       occ$locality)
-  )
-
-occ$countylow = tolower(
-  gsub("[[:punct:]]|\\s",
-       "",
-       occ$county)
-)
-
-occ$recordedBylow = tolower(
-  gsub("[[:punct:]]|\\s",
-       "",
-       occ$recordedBy)
-)
-
 occ1 = occ %>%
   filter(
-    (is.na(county)|
-       countylow==""),
-    (is.na(locality)|
-       localitylow==""),
-    is.na(decimalLatitude),
-    is.na(decimalLongitude),
-    (is.na(recordedBy)|
-       recordedBylow==""),
-    is.na(recordedByID),
-    is.na(eventDate),
-    is.na(year),
-    is.na(verbatimEventDate)) %>%
-  select(-localitylow,
-         -countylow,
-         -recordedBylow)
+    (is.na(county)&
+       is.na(locality)&
+       is.na(verbatimLocality)&
+       is.na(decimalLatitude)&
+       is.na(decimalLongitude))|
+    (is.na(recordedBy)&
+       is.na(recordedByID))|
+    (is.na(eventDate)&
+       is.na(year)&
+       is.na(verbatimEventDate))
+  )
 
 occ1$mids = 1
 
 occ %<>%
-  filter(!occurrenceID%in%occ1$occurrenceID) %>%
-  select(-localitylow,
-         -countylow,
-         -recordedBylow)
+  filter(!occurrenceID%in%occ1$occurrenceID)
 ```
 
 ## MIDS level 2
