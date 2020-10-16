@@ -49,27 +49,42 @@ infwith <- function(df,
     )
   return(df)
 }
+
+unksub <- function(df,
+                   colname) {
+  unks = c("unknown",
+           "unknown:undigitized")
+  df %<>%
+    mutate("{colname}" := 
+             ifelse(.data[[colname]]%in%unks,
+                    NA,
+                    .data[[colname]])
+    )
+  return(df)
+}
 ```
 
-Set the value for the property of a record to `known:withheld` if its Darwin Core property name is present in the `dwc:informationWithheld` field.
+Set the value for the property of a record to `known:withheld` if its Darwin Core property name is present in the `dwc:informationWithheld` field. Also set values of `unknown` or `unknown:undigitized` as blanks. These are considered equivalent to undigitized data, which may or may not be available. Contrast with unknown:missing or unknown:undecipherable, which indicate digitization of these data has at least been attempted.
 
 This is currently done for the following Darwin Core properties, using a custom function:
 
 ```{r infowithheld}
-withheldproperties = c("locality",
-                       "verbatimLocality",
-                       "decimalLatitude",
-                       "decimalLongitude",
-                       "county",
-                       "recordedBy",
-                       "recordedByID",
-                       "eventDate",
-                       "year",
-                       "verbatimEventDate")
+usedproperties = c("locality",
+                   "verbatimLocality",
+                   "decimalLatitude",
+                   "decimalLongitude",
+                   "county",
+                   "recordedBy",
+                   "recordedByID",
+                   "eventDate",
+                   "year",
+                   "verbatimEventDate")
 
-for (i in 1:length(withheldproperties)) {
+for (i in 1:length(usedproperties)) {
   occ = infwith(occ,
-                withheldproperties[i])
+                usedproperties[i])
+  occ = unksub(occ,
+               usedproperties[i])
 }
 ```
 
@@ -85,6 +100,7 @@ occminus = occ %>%
               is.na(collectionCode)&
               is.na(ownerInstitutionCode)&
               is.na(institutionID)&
+              is.na(collectionID)&
               is.na(rightsHolder)))
 
 occminus$mids = -1

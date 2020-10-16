@@ -378,35 +378,29 @@ summary {
 <h2>Read occurrence file</h2>
 <p>Download a GBIF archive to your working directory, unzip and import the occurrence file.</p>
 <pre class="r"><code>occ = read_tsv(&quot;occurrence-edi.txt&quot;,
-               col_types = cols(.default = &quot;c&quot;))</code></pre>
-<pre><code>## Warning: 1923 parsing failures.
-##  row               col           expected      actual                 file
-## 1863 occurrenceRemarks delimiter or quote             &#39;occurrence-edi.txt&#39;
-## 1863 occurrenceRemarks delimiter or quote S           &#39;occurrence-edi.txt&#39;
-## 1863 occurrenceRemarks delimiter or quote             &#39;occurrence-edi.txt&#39;
-## 1863 occurrenceRemarks delimiter or quote S           &#39;occurrence-edi.txt&#39;
-## 1863 NA                249 columns        211 columns &#39;occurrence-edi.txt&#39;
-## .... ................. .................. ........... ....................
-## See problems(...) for more details.</code></pre>
+               col_types = cols(.default = &quot;c&quot;),
+               quote=&quot;&quot;)</code></pre>
 </div>
 <div id="parse-informationwithheld-to-columns" class="section level2">
 <h2>Parse informationWithheld to columns</h2>
-<p>Set the value for the property of a record to <code>known:withheld</code> if its Darwin Core property name is present in the <code>dwc:informationWithheld</code> field.</p>
+<p>Set the value for the property of a record to <code>known:withheld</code> if its Darwin Core property name is present in the <code>dwc:informationWithheld</code> field. Also set values of <code>unknown</code> or <code>unknown:undigitized</code> as blanks. These are considered equivalent to undigitized data, which may or may not be available. Contrast with unknown:missing or unknown:undecipherable, which indicate digitization of these data has at least been attempted.</p>
 <p>This is currently done for the following Darwin Core properties, using a custom function:</p>
-<pre class="r"><code>withheldproperties = c(&quot;locality&quot;,
-                       &quot;verbatimLocality&quot;,
-                       &quot;decimalLatitude&quot;,
-                       &quot;decimalLongitude&quot;,
-                       &quot;county&quot;,
-                       &quot;recordedBy&quot;,
-                       &quot;recordedByID&quot;,
-                       &quot;eventDate&quot;,
-                       &quot;year&quot;,
-                       &quot;verbatimEventDate&quot;)
+<pre class="r"><code>usedproperties = c(&quot;locality&quot;,
+                   &quot;verbatimLocality&quot;,
+                   &quot;decimalLatitude&quot;,
+                   &quot;decimalLongitude&quot;,
+                   &quot;county&quot;,
+                   &quot;recordedBy&quot;,
+                   &quot;recordedByID&quot;,
+                   &quot;eventDate&quot;,
+                   &quot;year&quot;,
+                   &quot;verbatimEventDate&quot;)
 
-for (i in 1:length(withheldproperties)) {
+for (i in 1:length(usedproperties)) {
   occ = infwith(occ,
-                withheldproperties[i])
+                usedproperties[i])
+  occ = unksub(occ,
+               usedproperties[i])
 }</code></pre>
 </div>
 <div id="mids-level--1" class="section level2">
@@ -419,6 +413,7 @@ for (i in 1:length(withheldproperties)) {
               is.na(collectionCode)&amp;
               is.na(ownerInstitutionCode)&amp;
               is.na(institutionID)&amp;
+              is.na(collectionID)&amp;
               is.na(rightsHolder)))
 
 occminus$mids = -1
@@ -509,7 +504,7 @@ print(
          summ$perc[2],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 0: 1129 or 0.16%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 0: 1333 or 0.15%&quot;</code></pre>
 <pre class="r"><code>print(
   paste0(&quot;Number of records at 1: &quot;,
          dim(occ1)[1],
@@ -517,7 +512,7 @@ print(
          summ$perc[3],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 1: 467008 or 65.9%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 1: 595838 or 65.93%&quot;</code></pre>
 <pre class="r"><code>print(
   paste0(&quot;Number of records at 2: &quot;,
          dim(occ2)[1],
@@ -525,7 +520,7 @@ print(
          summ$perc[4],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 2: 47262 or 6.67%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 2: 60327 or 6.68%&quot;</code></pre>
 <pre class="r"><code>print(
   paste0(&quot;Number of records at 3: &quot;,
          dim(occ)[1],
@@ -533,7 +528,7 @@ print(
          summ$perc[5],
          &quot;%&quot;)
 )</code></pre>
-<pre><code>## [1] &quot;Number of records at 3: 193305 or 27.28%&quot;</code></pre>
+<pre><code>## [1] &quot;Number of records at 3: 246183 or 27.24%&quot;</code></pre>
 </div>
 
 

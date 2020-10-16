@@ -378,25 +378,29 @@ summary {
 <h2>Read occurrence file</h2>
 <p>Download a GBIF archive to your working directory, unzip and import the occurrence file.</p>
 <pre class="r"><code>occ = read_tsv(&quot;occurrence.txt&quot;,
-               col_types = cols(.default = &quot;c&quot;))</code></pre>
+               col_types = cols(.default = &quot;c&quot;),
+               quote=&quot;&quot;)</code></pre>
 </div>
 <div id="parse-informationwithheld-to-columns" class="section level2">
 <h2>Parse informationWithheld to columns</h2>
-<p>Set the value for the property of a record to <code>known:withheld</code> if its Darwin Core property name is present in the <code>dwc:informationWithheld</code> field.</p>
+<p>Set the value for the property of a record to <code>known:withheld</code> if its Darwin Core property name is present in the <code>dwc:informationWithheld</code> field. Also set values of <code>unknown</code> or <code>unknown:undigitized</code> as blanks. These are considered equivalent to undigitized data, which may or may not be available. Contrast with unknown:missing or unknown:undecipherable, which indicate digitization of these data has at least been attempted.</p>
 <p>This is currently done for the following Darwin Core properties, using a custom function:</p>
-<pre class="r"><code>withheldproperties = c(&quot;locality&quot;,
-                       &quot;decimalLatitude&quot;,
-                       &quot;decimalLongitude&quot;,
-                       &quot;county&quot;,
-                       &quot;recordedBy&quot;,
-                       &quot;recordedByID&quot;,
-                       &quot;eventDate&quot;,
-                       &quot;year&quot;,
-                       &quot;verbatimEventDate&quot;)
+<pre class="r"><code>usedproperties = c(&quot;locality&quot;,
+                   &quot;verbatimLocality&quot;,
+                   &quot;decimalLatitude&quot;,
+                   &quot;decimalLongitude&quot;,
+                   &quot;county&quot;,
+                   &quot;recordedBy&quot;,
+                   &quot;recordedByID&quot;,
+                   &quot;eventDate&quot;,
+                   &quot;year&quot;,
+                   &quot;verbatimEventDate&quot;)
 
-for (i in 1:length(withheldproperties)) {
+for (i in 1:length(usedproperties)) {
   occ = infwith(occ,
-                withheldproperties[i])
+                usedproperties[i])
+  occ = unksub(occ,
+               usedproperties[i])
 }</code></pre>
 </div>
 <div id="mids-level--1" class="section level2">
@@ -409,6 +413,7 @@ for (i in 1:length(withheldproperties)) {
               is.na(collectionCode)&amp;
               is.na(ownerInstitutionCode)&amp;
               is.na(institutionID)&amp;
+              is.na(collectionID)&amp;
               is.na(rightsHolder)))
 
 occminus$mids = -1
