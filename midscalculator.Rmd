@@ -95,7 +95,8 @@ Some specimens may not even achieve MIDS level 0. This happens if they have no p
 ```{r minus}
 occminus = occ %>%
   filter((is.na(catalogNumber)&
-            is.na(otherCatalogNumbers))|
+            is.na(otherCatalogNumbers)&
+            is.na(materialSampleID))|
            (is.na(institutionCode)&
               is.na(collectionCode)&
               is.na(ownerInstitutionCode)&
